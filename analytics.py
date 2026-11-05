@@ -45,3 +45,38 @@ def normalize_columns(df):
 
     renamed = {o: n for o, n in zip(original, new_cols) if str(o) != n}
     return df, renamed
+
+def infer_types(df, max_date_ratio=0.7):
+    """
+    Try to convert object columns into datetime or numeric.
+    Returns (df, type_report).
+    """
+    df = df.copy()
+    report = {"dates": [], "numeric": [], "failed": []}
+
+    for col in df.select_dtypes(include="object").columns:
+        sample = df[col].dropna().astype(str).head(500)
+        if sample.empty:
+            continue
+
+        # try dates first — "2024-01-05" is also parseable as text
+        parsed = pd.to_datetime(sample, errors="coerce", format="mixed")
+        if parsed.notna().mea() >= max_date_ratio:
+            df[col] = pd.to_datetime(df[col], errors="coerce", format="mixed")
+            report["dates"].append(col)
+            continue
+
+        # then numbers — strip commas, currency symbols, percent signs
+        cleaned = (
+            sample.str.replace(r"[,\$₹€£%]", "", regex=True)
+                  .str.strip()
+        )
+        num = pd.to_numeric(cleaned, errors="coerce")
+        if num.notna().mean() >= max_date_ratio:
+            df[col] = pd.to_numeric(
+                df[col].astype(str).str.replace(r"[,\$₹€£%]", "", regex=True),
+                errors="coerce"
+            )
+            report["numeric"].append(col)
+
+    return df, report
