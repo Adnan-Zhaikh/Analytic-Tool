@@ -19,3 +19,18 @@ def load_file(uploaded_file):
 
     report = {"filename": uploaded_file.name, "raw_rows": len(df)}
     return df, report
+
+def normalize_columns(df):
+    """
+    Clean column names and report any duplicates created.
+    """
+    original = list(df.columns)
+    df = df.copy()
+    df.columns = (
+        df.columns.astype(str)
+          .str.strip()
+          .str.replace(r"\s+", "_", regex=True)
+          .str.lower()
+    )
+
+    
