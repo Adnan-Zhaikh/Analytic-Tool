@@ -33,4 +33,15 @@ def normalize_columns(df):
           .str.lower()
     )
 
-    
+    seen, new_cols = {}, []
+    for c in df.columns:
+        if c in seen:
+            seen[c] += 1
+            new_cols.append(f"{c}_{seen[c]}")
+        else:
+            seen[c] = 0
+            new_cols.append(c)
+    df.columns = new_cols
+
+    renamed = {o: n for o, n in zip(original, new_cols) if str(o) != n}
+    return df, renamed
