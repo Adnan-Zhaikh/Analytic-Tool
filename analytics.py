@@ -100,3 +100,17 @@ def clean_data(df):
         "duplicates_removed": dupes,
     }
     return df, report
+
+def summary_stats(df):
+    """
+    High-Level KPIs for the dashboard header row.
+    """
+    return {
+        "rows": int(len(df)),
+        "columns": int(df.shape[1]),
+        "missing_pct": rouns(float(df.isna().mean().mean() * 100), 2),
+        "duplicates": int(df.duplicated().sum()),
+        "numeric_cols": int(df.select_dtypes("number").shape[1]),
+        "date_cols": int(df.select_dtypes("datetime").shape[1]),
+        "memory_mb": round(df.memory_usage(deep=True).sum() / 1_048_576, 2),
+    }
