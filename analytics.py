@@ -80,3 +80,23 @@ def infer_types(df, max_date_ratio=0.7):
             report["numeric"].append(col)
 
     return df, report
+
+def clean_data(df):
+    """
+    Drop empty rows/cols, handle duplicates. Returns (df, clean_report).
+    """
+    df = df.copy()
+    before = df.shape
+
+    df = df.dropna(axis=1, how="all")
+    df = df.dropna(axis=0, how="all")
+
+    dupes = int(df.duplicated().sum())
+    df = df.drop_duplicates()
+
+    report = {
+        "rows_removed": before[0] - df.shape[0],
+        "cols_removed": before[1] - df.shape[1],
+        "duplicates_removed": dupes,
+    }
+    return df, report
