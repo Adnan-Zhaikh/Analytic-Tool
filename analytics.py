@@ -186,3 +186,35 @@ def category_breakdown(df, cat_col, value_col, top_n=10, agg="sum"):
             .head(top_n)
     )
     return grouped
+
+def correlation_matrix(df, method="pearson"):
+    """
+    Compute correlation matrix for numeric columns.
+    method: "pearson", "spearman", "kendall"
+    """
+    num = df.select_dtypes(include="number")
+    if num.shape[1] < 2:
+        return None  # Not enough numeric columns for correlation
+    return num.corr(method=method, numeric_only=True)
+
+def generate_insights(df, date_col, value_col, freq="ME"):
+    """
+    Generate a list of insights based on the data.
+    Returns a list of strings.
+    """
+    insights = []
+    stats = summary_stats(df)
+
+    if stats["missing_pct"] > 20:
+        insights.append(f"High missing data: {stats['missing_pct']}% of values are missing.")
+
+    if stats["duplicates"] > 0:
+        insights.append(f"There are {stats['duplicates']} duplicate rows in the dataset.")
+
+    if stats["numeric_cols"] == 0:
+        insights.append("No numeric columns found for analysis.")
+
+    if stats["date_cols"] == 0:
+        insights.append("No date columns found for trend analysis.")
+
+    return insights
