@@ -108,9 +108,38 @@ def summary_stats(df):
     return {
         "rows": int(len(df)),
         "columns": int(df.shape[1]),
-        "missing_pct": rouns(float(df.isna().mean().mean() * 100), 2),
+        "missing_pct": round(float(df.isna().mean().mean() * 100), 2),
         "duplicates": int(df.duplicated().sum()),
         "numeric_cols": int(df.select_dtypes("number").shape[1]),
         "date_cols": int(df.select_dtypes("datetime").shape[1]),
         "memory_mb": round(df.memory_usage(deep=True).sum() / 1_048_576, 2),
     }
+
+def column_profile(df):
+    """
+    One row per column: dtype, missing, unique, min/max, mean/std, etc.
+    """
+    rows = []
+    for col in df.columns:
+        s = df[col]
+        row = {
+            "column": col,
+            "dtype": str(s.dtype),
+            "missing": int(s.isna().sum()),
+            "missing_pct": round(float(s.isna().mean() * 100), 2),
+            "unique": int(s.nunique(dropna=True)),
+        }
+        if pd.api.types.is_numeric_dtype(s):
+            row["min"] = float(s.min())
+            row["max"] = float(s.max())
+            row["mean"] = round(float(s.mean()), 2) if s.notna().any() else None
+            row["std"] = round(float(s.std()), 2) if s.notna().any() else None
+        elif pd.api.types.is_datetime64_any_dtype(s):
+            row["min"] = s.min()
+            row["max"] = s.max()
+            row["mean"] = None
+            row["std"] = None
+        else:
+            row["min"] = row["max"] = row["mean"] = row["std"] = None
+        rows.append(row)
+    return pd.DataFrame(rows)
