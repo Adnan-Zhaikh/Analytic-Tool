@@ -165,3 +165,24 @@ def trend_by(df, date_col, value_col, freq="ME", agg="sum"):
           .reset_index()
     )
     return grouped
+
+def category_breakdown(df, cat_col, value_col, top_n=10, agg="sum"):
+    """
+    Aggregate a value column by a categorical column, returning top N categories.
+    """
+    df = df.copy()
+    if cat_col not in df.columns or value_col not in df.columns:
+        raise ValueError(f"Columns not found: {cat_col}, {value_col}")
+
+    work = df[[cat_col, value_col]].dropna()
+    if work.empty:
+        return pd.DataFrame(columns=[cat_col, value_col])
+
+    grouped = (
+        work.groupby(cat_col)[value_col]
+            .agg(agg)
+            .reset_index()
+            .sort_values(by=value_col, ascending=False)
+            .head(top_n)
+    )
+    return grouped
