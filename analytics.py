@@ -143,3 +143,25 @@ def column_profile(df):
             row["min"] = row["max"] = row["mean"] = row["std"] = None
         rows.append(row)
     return pd.DataFrame(rows)
+
+def trend_by(df, date_col, value_col, freq="ME", agg="sum"):
+    """
+    Aggregate a value column by a date column, returning a time series.
+    freq: "D", "W", "M", "ME", "Q", "Y"
+    agg: "sum", "mean", "median", etc.
+    """
+    df = df.copy()
+    if date_col not in df.columns or value_col not in df.columns:
+        raise ValueError(f"Columns not found: {date_col}, {value_col}")
+
+    work = df[[date_col, value_col]].dropna()
+    if work.empty:
+        return pd.DataFrame(columns=[date_col, value_col])
+
+    grouped = (
+        work.set_index(date_col)[value_col]
+          .resample(freq)
+          .agg(agg)
+          .reset_index()
+    )
+    return grouped
