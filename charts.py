@@ -24,3 +24,9 @@ def line_chart(data, x, y, title="", markers=True):
     fig = px.line(data, x=x, y=y, markers=markers)
     return _style(fig, title=title)
 
+def bar_chart(data, x, y, title="", orientation="v", text_auto=True):
+    if data.empty:
+        return _empty_figure("No data to display.")
+    fig = px.bar(data, x=x, y=y, orientation=orientation, text_auto=text_auto)
+    return _style(fig, title=title)
+
