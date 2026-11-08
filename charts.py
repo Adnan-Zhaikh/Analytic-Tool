@@ -30,3 +30,16 @@ def bar_chart(data, x, y, title="", orientation="v", text_auto=True):
     fig = px.bar(data, x=x, y=y, orientation=orientation, text_auto=text_auto)
     return _style(fig, title=title)
 
+def histogram(data, column, title="", bins=40):
+    if data.empty or column not in data.columns:
+        return _empty_figure("No data to display.")
+    fig = px.histogram(data, x=column, nbins=bins, marginal="box")
+    return _style(fig, title=title)
+
+
+def scatter_plot(data, x, y, title="", color=None, trendline=None):
+    if data.empty:
+        return _empty_figure("No data to display.")
+    fig = px.scatter(data, x=x, y=y, color=color, trendline=trendline, opacity=0.7)
+    return _style(fig, title=title)
+
