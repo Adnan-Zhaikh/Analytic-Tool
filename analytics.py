@@ -202,19 +202,38 @@ def generate_insights(df, date_col, value_col, freq="ME"):
     Generate a list of insights based on the data.
     Returns a list of strings.
     """
+    trend = trend_by(df, date_col, value_col, freq=freq)
+    if len(trend) < 2:
+        return ["Not enough data to generate insights."]
+
+    v = trend[value_col]
     insights = []
-    stats = summary_stats(df)
 
-    if stats["missing_pct"] > 20:
-        insights.append(f"High missing data: {stats['missing_pct']}% of values are missing.")
+    peak_idx = v.idxmax()
+    low_idx = v.idxmin()
+    insights.append(
+        f"Highest {value_col} was {v[peak_idx]:,.2f} "
+        f"in {pd.Timestamp(trend.loc[peak_idx, date_col]).strftime('%b %Y')}."
+    )
+    insights.append(
+        f"Lowest {value_col} was {v[low_idx]:,.2f} "
+        f"in {pd.Timestamp(trend.loc[low_idx, date_col]).strftime('%b %Y')}."
+    )
 
-    if stats["duplicates"] > 0:
-        insights.append(f"There are {stats['duplicates']} duplicate rows in the dataset.")
+    first, last = v.iloc[0], v.iloc[-1]
+    if first != 0:
+        pct = ((last - first) / abs(first)) * 100
+        direction = "increase" if pct > 0 else "decrease"
+        insights.append(
+            f"Overall trend is a {direction} of {abs(pct):.2f}% from {first:,.2f} to {last:,.2f}."
+        )
 
-    if stats["numeric_cols"] == 0:
-        insights.append("No numeric columns found for analysis.")
-
-    if stats["date_cols"] == 0:
-        insights.append("No date columns found for trend analysis.")
+    if len(v) >= 2:
+        prev, curr = v.iloc[-2], v.iloc[-1]
+        if prev != 0:
+            mom = ((curr - prev) / abs(prev)) * 100
+            insights.append(
+                f"Month-over-month change is {mom:+.2f}% from {prev:,.2f} to {curr:,.2f}."
+            )
 
     return insights
