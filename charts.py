@@ -43,3 +43,32 @@ def scatter_plot(data, x, y, title="", color=None, trendline=None):
     fig = px.scatter(data, x=x, y=y, color=color, trendline=trendline, opacity=0.7)
     return _style(fig, title=title)
 
+def heatmap(corr, title="Correlation Matrix"):
+    if corr is None or corr.empty:
+        return _empty_figure("Need at least two numeric columns")
+
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=corr.values,
+            x=corr.columns,
+            y=corr.index,
+            colorscale="RdBu",
+            zmid=0,                     # white at zero
+            zmin=-1, zmax=1,
+            text=corr.round(2).values,
+            texttemplate="%{text}",
+            colorbar=dict(title="r"),
+        )
+    )
+    return _style(fig, title, height=520)
+
+def _empty_figure(message="No data"):
+    fig = go.Figure()
+    fig.add_annotation(
+        text=message, xref="paper", yref="paper",
+        x=0.5, y=0.5, showarrow=False,
+        font=dict(size=16, color="#888"),
+    )
+    fig.update_xaxes(visible=False)
+    fig.update_yaxes(visible=False)
+    return fig
