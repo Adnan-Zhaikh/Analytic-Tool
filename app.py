@@ -100,3 +100,40 @@ if date_col:
     if isinstance(date_range, tuple) and len(date_range) == 2:
         start, end = pd.Timestamp(date_range[0]), pd.Timestamp(date_range[1])
         df = df[(df[date_col] >= start) & (df[date_col] <= end)]
+
+tab_overview, tab_trends, tab_categories, tab_relations, tab_data = st.tabs(
+    ["Overview", "Trends", "Categories", "Relations", "Raw Data"]
+)
+
+with tab_overview:
+    st.subheader("Column Profile")
+    st.dataframe(column_profile(df), use_container_width=True, hide_index=True)
+
+    if date_col and value_col:
+        st.subheader("Key Insights")
+        for line in generate_insights(df, date_col, value_col):
+            st.markdown(f"- {line}")
+
+    st.subheader("Distributions")
+    pick = st.selectbox("Column to inspect", num_cols, key="hist_pick")
+    st.plotly_chart(histogram(df, pick, f"Distribution of {pick}"),
+                    use_container_width=True)
+
+with tab_trends:
+    if not date_col:
+        st.info("No date column detected, so trends aren't available.")
+    else:
+        freq_map = {"Daily": "D", "Weekly": "W", "Monthly": "ME",
+                    "Quarterly": "QE", "Yearly": "YE"}
+        fc1, fc2 = st.columns(2)
+        freq_label = fc1.radio("Aggregation", list(freq_map), index=2, horizontal=True)
+        agg = fc2.selectbox("Aggregate with", ["sum", "mean", "count", "max", "min"])
+
+        trend = trend_by(df, date_col, value_col, freq=freq_map[freq_label], agg=agg)
+
+        st.plotly_chart(
+            line_chart(trend, date_col, value_col,
+                       f"{value_col} by {freq_label.lower()}"),
+            use_container_width=True
+        )
+        st.dataframe(trend, use_container_width=True, hide_index=True)
