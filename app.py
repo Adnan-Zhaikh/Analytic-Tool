@@ -56,3 +56,19 @@ c2.metric("Columns", stats["columns"])
 c3.metric("Missing", f"{stats['missing_pct']}%")
 c4.metric("Duplicates", stats["duplicates"])
 c5.metric("Size", f"{stats['memory_mb']} MB")
+
+with st.expander("🧹 What the cleaning did", expanded=False):
+    cr = reports["clean"]
+    st.write(f"Empty rows removed: **{cr['rows_removed']}**")
+    st.write(f"Empty columns removed: **{cr['cols_removed']}**")
+    st.write(f"Duplicate rows removed: **{cr['duplicates_removed']}**")
+
+    if reports["renamed"]:
+        st.write("Renamed columns:")
+        st.json(reports["renamed"])
+
+    tr = reports["types"]
+    if tr["dates"]:
+        st.write(f"Detected as dates: {', '.join(tr['dates'])}")
+    if tr["numeric"]:
+        st.write(f"Detected as numbers: {', '.join(tr['numeric'])}")
