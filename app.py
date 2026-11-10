@@ -14,7 +14,7 @@ from analytics import (
 st.set_page_config(page_title="Data Dashboard",page_icon=":bar_chart:", layout="wide")
 
 @st.cache_data(show_spinner=False)
-def process_pipeline(file_bytes, file_name):
+def process_pipeline(file_bytes, filename):
     """
     Everything from raw bytes to clean df + reports.
     Cached on file content, so re-renders are instant.
@@ -29,8 +29,12 @@ def process_pipeline(file_bytes, file_name):
     df, renamed = normalize_columns(df)
     df, type_report = infer_types(df)
     df, clean_report = clean_data(df)
-    return df, {"load": load_report, "renamed": renamed,
-                "types": type_report, "clean": clean_report}
+    return df, {
+        "load": load_report,
+        "renamed": renamed,
+        "types": type_report,
+        "clean": clean_report,
+    }
 
 st.title("📊 Upload & Analyse")
 st.caption("Drop a CSV or Excel file — get instant stats, charts and insights.")
@@ -43,7 +47,7 @@ if uploaded is None:
     st.info("Waiting for a file. Try a CSV with a date column, a numeric column, and a category column.")
     st.stop()
 
-df, reports = process_pipeline(uploaded.read(), uploaded.name)
+df, reports = process_pipeline(uploaded.getvalue(), uploaded.name)
 
 st.success(
     f"Loaded **{uploaded.name}** — {reports['load']['raw_rows']:,} raw rows → "

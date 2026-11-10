@@ -61,7 +61,7 @@ def infer_types(df, max_date_ratio=0.7):
 
         # try dates first — "2024-01-05" is also parseable as text
         parsed = pd.to_datetime(sample, errors="coerce", format="mixed")
-        if parsed.notna().mea() >= max_date_ratio:
+        if parsed.notna().mean() >= max_date_ratio:
             df[col] = pd.to_datetime(df[col], errors="coerce", format="mixed")
             report["dates"].append(col)
             continue

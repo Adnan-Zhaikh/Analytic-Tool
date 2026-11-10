@@ -24,11 +24,18 @@ def line_chart(data, x, y, title="", markers=True):
     fig = px.line(data, x=x, y=y, markers=markers)
     return _style(fig, title=title)
 
-def bar_chart(data, x, y, title="", orientation="v", text_auto=True):
+def bar_chart(data, x, y, title="", horizontal=False, text_auto=True):
     if data.empty:
-        return _empty_figure("No data to display.")
-    fig = px.bar(data, x=x, y=y, orientation=orientation, text_auto=text_auto)
-    return _style(fig, title=title)
+        return _empty_figure("No data to plot")
+
+    if horizontal:
+        fig = px.bar(data, x=y, y=x, orientation="h", text_auto=text_auto)
+        fig.update_layout(yaxis=dict(autorange="reversed"))
+    else:
+        fig = px.bar(data, x=x, y=y, text_auto=text_auto)
+
+    return _style(fig, title)
+
 
 def histogram(data, column, title="", bins=40):
     if data.empty or column not in data.columns:
