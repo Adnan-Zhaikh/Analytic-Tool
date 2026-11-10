@@ -72,3 +72,31 @@ with st.expander("🧹 What the cleaning did", expanded=False):
         st.write(f"Detected as dates: {', '.join(tr['dates'])}")
     if tr["numeric"]:
         st.write(f"Detected as numbers: {', '.join(tr['numeric'])}")
+
+st.sidebar.header("⚙️ Controls")
+
+num_cols = df.select_dtypes("number").columns.tolist()
+date_cols = df.select_dtypes("datetime").columns.tolist()
+cat_cols = df.select_dtypes(include=["object", "category", "bool"]).columns.tolist()
+
+if not num_cols:
+    st.warning("No numeric columns detected — charts need at least one.")
+    st.stop()
+
+value_col = st.sidebar.selectbox("Value column (metric)", num_cols)
+
+date_col = None
+if date_cols:
+    date_col = st.sidebar.selectbox("Date column", date_cols)
+
+cat_col = None
+if cat_cols:
+    cat_col = st.sidebar.selectbox("Category column", cat_cols)
+
+# date range filter
+if date_col:
+    lo, hi = df[date_col].min(), df[date_col].max()
+    date_range = st.sidebar.date_input("Date range", value=(lo, hi))
+    if isinstance(date_range, tuple) and len(date_range) == 2:
+        start, end = pd.Timestamp(date_range[0]), pd.Timestamp(date_range[1])
+        df = df[(df[date_col] >= start) & (df[date_col] <= end)]
