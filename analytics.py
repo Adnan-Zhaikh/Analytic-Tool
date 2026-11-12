@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 import numpy as np
 from io import BytesIO
@@ -237,3 +239,15 @@ def generate_insights(df, date_col, value_col, freq="ME"):
             )
 
     return insights
+
+def load_sample(path="data/sample_sales.csv"):
+    """
+    Load the bundled sample dataset.
+    Returns (df, report) in the same shape as load_file.
+    """
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Sample file not found at {path}")
+
+    df = pd.read_csv(path)
+    report = {"filename": os.path.basename(path), "raw_rows": len(df)}
+    return df, report
