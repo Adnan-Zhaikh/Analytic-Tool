@@ -6,10 +6,11 @@ from charts import (
 )
 
 from analytics import (
-    load_file, normalize_columns, infer_types, clean_data,
-    summary_stats, column_profile, trend_by, 
-    category_breakdown, correlation_matrix, generate_insights, 
+    load_file, generate_sample, normalize_columns, infer_types, clean_data,
+    summary_stats, column_profile, trend_by,
+    category_breakdown, correlation_matrix, generate_insights,
 )
+
 
 st.set_page_config(page_title="Data Dashboard",page_icon=":bar_chart:", layout="wide")
 
@@ -36,30 +37,67 @@ def process_pipeline(file_bytes, filename):
         "clean": clean_report,
     }
 
+@st.cache_data(show_spinner=False)
+def process_sample():
+    """Same pipeline as process_pipeline, but generates data in memory."""
+    df, load_report = generate_sample()
+    df, renamed = normalize_columns(df)
+    df, type_report = infer_types(df)
+    df, clean_report = clean_data(df)
+    return df, {
+        "load": load_report, "renamed": renamed,
+        "types": type_report, "clean": clean_report,
+    }
+
+
+
 st.title("📊 Upload & Analyse")
 st.caption("Drop a CSV or Excel file — get instant stats, charts and insights.")
 
-uploaded = st.file_uploader(
-    "Choose a file", type=["csv", "xlsx", "xls"], label_visibility="collapsed"
-)
+# initialise once
+if "data_source" not in st.session_state:
+    st.session_state.data_source = None
 
-if uploaded is None:
-    st.info("Waiting for a file. Try a CSV with a date column, a numeric column, and a category column.")
+col_a, col_b = st.columns([3, 1])
+
+with col_a:
+    uploaded = st.file_uploader(
+        "Choose a file", type=["csv", "xlsx", "xls"], label_visibility="collapsed"
+    )
+
+with col_b:
+    st.write("")
+    if st.button("🎲 Try sample data", use_container_width=True):
+        st.session_state.data_source = "sample"
+
+# an upload always takes precedence and clears the sample flag
+if uploaded is not None:
+    st.session_state.data_source = "upload"
+    df, reports = process_pipeline(uploaded.getvalue(), uploaded.name)
+    source_label = uploaded.name
+elif st.session_state.data_source == "sample":
+    df, reports = process_sample()
+    source_label = reports["load"]["filename"] + " (sample)"
+else:
+    st.info(
+        "Upload a file, or click **Try sample data** to explore with a "
+        "2,600-row retail sales dataset."
+    )
     st.stop()
 
-df, reports = process_pipeline(uploaded.getvalue(), uploaded.name)
-
 st.success(
-    f"Loaded **{uploaded.name}** — {reports['load']['raw_rows']:,} raw rows → "
+    f"Loaded **{source_label}** — {reports['load']['raw_rows']:,} raw rows → "
     f"{len(df):,} clean rows, {df.shape[1]} columns."
 )
 
 stats = summary_stats(df)
 c1, c2, c3, c4, c5 = st.columns(5)
+c1.metric("Rows", f"{stats['rows']:,}")
 c2.metric("Columns", stats["columns"])
 c3.metric("Missing", f"{stats['missing_pct']}%")
 c4.metric("Duplicates", stats["duplicates"])
 c5.metric("Size", f"{stats['memory_mb']} MB")
+
 
 with st.expander("🧹 What the cleaning did", expanded=False):
     cr = reports["clean"]
@@ -223,3 +261,4 @@ with tab_data:
 
 st.divider()
 st.caption("Built with pandas + Plotly + Streamlit · Data never leaves your session.")
+st.caption("Sample: 2 years of retail orders across 5 regions — includes messy data on purpose.")

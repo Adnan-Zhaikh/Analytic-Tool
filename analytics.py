@@ -1,5 +1,3 @@
-import os
-
 import pandas as pd
 import numpy as np
 from io import BytesIO
@@ -239,15 +237,60 @@ def generate_insights(df, date_col, value_col, freq="ME"):
             )
 
     return insights
-
-def load_sample(path="data/sample_sales.csv"):
+    
+def generate_sample(n_rows=2000, seed=42):
     """
-    Load the bundled sample dataset.
-    Returns (df, report) in the same shape as load_file.
+    Build a synthetic retail sales dataset in memory.
+    Deterministic: same seed always gives the same data.
     """
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"Sample file not found at {path}")
+    rng = np.random.default_rng(seed)
 
-    df = pd.read_csv(path)
-    report = {"filename": os.path.basename(path), "raw_rows": len(df)}
+    dates = pd.date_range("2024-01-01", "2025-12-31", freq="D")
+    regions = ["North", "South", "East", "West", "Central"]
+    channels = ["Online", "Retail", "Partner", "Direct"]
+    categories = ["Electronics", "Home", "Apparel", "Sports", "Beauty"]
+    products = ["Air Fryer", "Smart Watch", "Bluetooth Speaker", "Running Shoes",
+                "Yoga Mat", "Coffee Maker", "Backpack", "Desk Lamp"]
+
+    # weight sales toward Oct-Nov for a festive spike
+    month_w = np.array([0.7, 0.75, 0.85, 0.9, 0.95, 1.0,
+                        0.95, 1.0, 1.05, 1.35, 1.45, 1.1])
+    day_w = month_w[dates.month - 1]
+    day_w = day_w / day_w.sum()
+
+    picked = rng.choice(dates, size=n_rows, p=day_w)
+    unit_price = np.round(rng.lognormal(mean=7.2, sigma=0.6, size=n_rows), 2)
+    quantity = rng.integers(1, 12, size=n_rows)
+    discount = rng.choice([0, 5, 10, 15, 20, 25], size=n_rows,
+                          p=[0.35, 0.15, 0.2, 0.15, 0.1, 0.05])
+
+    df = pd.DataFrame({
+        "order_id": [f"ORD-{i:05d}" for i in range(1, n_rows + 1)],
+        "order_date": picked,
+        "region": rng.choice(regions, size=n_rows),
+        "channel": rng.choice(channels, size=n_rows),
+        "category": rng.choice(categories, size=n_rows),
+        "product": rng.choice(products, size=n_rows),
+        "unit_price_inr": unit_price,
+        "quantity": quantity,
+        "discount_pct": discount,
+        "customer_name": rng.choice(
+            ["Aarav", "Diya", "Vihaan", "Ananya", "Kabir", "Ishita",
+             "Rohan", "Meera", "Arjun", "Sara"], size=n_rows),
+    })
+
+    df["total_inr"] = np.round(
+        df["unit_price_inr"] * df["quantity"] * (1 - df["discount_pct"] / 100), 2
+    )
+
+    # inject realistic messiness
+    messy = rng.random(n_rows) < 0.06
+    df.loc[messy, "unit_price_inr"] = df.loc[messy, "unit_price_inr"].apply(
+        lambda v: f"₹{v:,.2f}"
+    )
+
+    df.loc[rng.random(n_rows) < 0.04, "region"] = None
+    df.loc[rng.random(n_rows) < 0.03, "customer_name"] = None
+
+    report = {"filename": "generated_sample.csv", "raw_rows": len(df)}
     return df, report
