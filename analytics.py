@@ -283,10 +283,13 @@ def generate_sample(n_rows=2000, seed=42):
         df["unit_price_inr"] * df["quantity"] * (1 - df["discount_pct"] / 100), 2
     )
 
-    # inject realistic messiness
-    messy = rng.random(n_rows) < 0.06
-    df.loc[messy, "unit_price_inr"] = df.loc[messy, "unit_price_inr"].apply(
-        lambda v: f"₹{v:,.2f}"
+    # build prices as strings so the messy values fit naturally
+    df["unit_price_inr"] = df["unit_price_inr"].apply(lambda v: f"₹{v:,.2f}")
+
+    # revert ~94% back to plain numbers (still strings, no symbol/commas)
+    clean_mask = rng.random(n_rows) >= 0.06
+    df.loc[clean_mask, "unit_price_inr"] = df.loc[clean_mask, "unit_price_inr"].apply(
+        lambda v: v.replace("₹", "").replace(",", "")
     )
 
     df.loc[rng.random(n_rows) < 0.04, "region"] = None
